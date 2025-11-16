@@ -4,24 +4,31 @@ import { ArrowLeft, Mail, Phone, Building2, Calendar, CheckCircle, Clock } from 
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
 
-interface PriceQuery {
+// --- INTERFACES ---
+interface QuoteItemData {
+  query_id: string; 
+  quantity: number | null; 
+  name: string | null;     
+  product_id: string | null;
+}
+
+interface QuoteHeader {
   id: string
   customer_name: string
   customer_email: string
   customer_phone: string | null
   customer_company: string | null
   message: string | null
-  quantity: number | null
   status: string
   created_at: string
-  products: {
-    name: string
-    slug: string
-  } | null
+}
+
+interface PriceQuery extends QuoteHeader {
+  quote_items: QuoteItemData[]; 
 }
 
 export default function AdminQueriesPage() {
-  const [queries, setQueries] = useState<any[]>([])
+  const [queries, setQueries] = useState<PriceQuery[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'responded'>('all')
 
@@ -29,52 +36,64 @@ export default function AdminQueriesPage() {
     loadQueries()
   }, [filter])
 
+  // --- FINAL FIX: TWO-STEP DATA LOADING AND MANUAL JOIN ---
   async function loadQueries() {
     setLoading(true)
     
-    // First get price queries
-    let query = supabase
+    // STEP 1: Fetch ALL price queries (simple SELECT, guaranteed to work)
+    let headerQuery = supabase
       .from('price_queries')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .select(`id, customer_name, customer_email, customer_phone, customer_company, message, status, created_at`)
+      .order('created_at', { ascending: false });
 
     if (filter !== 'all') {
-      query = query.eq('status', filter === 'pending' ? 'pending' : 'responded')
+      headerQuery = headerQuery.eq('status', filter === 'pending' ? 'pending' : 'responded');
     }
 
-    const { data: queriesData, error } = await query
-    
-    if (error) {
-      console.error('Error loading queries:', error)
-      setQueries([])
-      setLoading(false)
-      return
+    const { data: quotesData, error: quotesError } = await headerQuery;
+
+    if (quotesError) {
+      console.error('Error loading quotes (Step 1 Failed):', quotesError);
+      alert(`Error loading quotes: ${quotesError.message}.`);
+      setQueries([]);
+      setLoading(false);
+      return;
     }
     
-    if (queriesData && queriesData.length > 0) {
-      // Get unique product IDs
-      const productIds = [...new Set(queriesData.map(q => q.product_id))]
-      
-      // Fetch product details
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('id, name, slug')
-        .in('id', productIds)
-      
-      // Combine the data
-      const queriesWithProducts = queriesData.map(query => ({
-        ...query,
-        products: productsData?.find(p => p.id === query.product_id) || null
-      }))
-      
-      setQueries(queriesWithProducts)
-    } else {
-      setQueries([])
+    if (quotesData.length === 0) {
+      setQueries([]);
+      setLoading(false);
+      return;
     }
+
+    const quoteIds = quotesData.map(q => q.id);
+
+    // STEP 2: Fetch ALL related quote items in a single batch request
+    const { data: itemsData, error: itemsError } = await supabase
+      .from('quote_items')
+      .select(`query_id, quantity, name, product_id`) 
+      .in('query_id', quoteIds); // Filter by the IDs fetched in Step 1
+
+    if (itemsError) {
+      console.warn('Warning: Could not load quote items (Step 2 Failed). Displaying customer headers only.', itemsError);
+      // Fallback: Use only the customer data
+      setQueries(quotesData.map(q => ({ ...q, quote_items: [] })) as PriceQuery[]);
+      setLoading(false);
+      return;
+    }
+
+    // STEP 3: Combine the data (Manual client-side JOIN)
+    const combinedQueries = quotesData.map(quote => ({
+      ...quote,
+      // Attach the array of items related to this specific quote
+      quote_items: itemsData.filter(item => item.query_id === quote.id)
+    }));
     
-    setLoading(false)
+    setQueries(combinedQueries as PriceQuery[]);
+    setLoading(false);
   }
 
+  // --- updateStatus and handleDelete functions remain the same ---
   async function updateStatus(id: string, status: string) {
     try {
       const { error } = await supabase
@@ -108,7 +127,7 @@ export default function AdminQueriesPage() {
     return (
       <ProtectedRoute>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
         </div>
       </ProtectedRoute>
     )
@@ -152,107 +171,126 @@ export default function AdminQueriesPage() {
           </div>
 
           <div className="space-y-4">
-            {queries.map((query) => (
-              <div key={query.id} className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-primary mb-2">
-                      {query.products?.name || 'Product Not Found'}
-                    </h3>
-                    <div className="flex items-center text-gray-text text-sm space-x-4">
-                      <span className="flex items-center">
-                        <Calendar size={16} className="mr-1" />
-                        {new Date(query.created_at).toLocaleString()}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${query.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                        {query.status === 'pending' ? (
-                          <span className="flex items-center"><Clock size={12} className="mr-1" />Pending</span>
-                        ) : (
-                          <span className="flex items-center"><CheckCircle size={12} className="mr-1" />Responded</span>
-                        )}
-                      </span>
+            {queries.map((query) => {
+              const itemCount = query.quote_items.length;
+              const firstItemName = itemCount > 0 
+                ? (query.quote_items[0].name || 'Item')
+                : 'No Items';
+              const title = itemCount > 0 
+                ? `Quote for ${firstItemName}${itemCount > 1 ? ` +${itemCount - 1} more` : ''}`
+                : 'Single-Product/Old Query';
+
+              return (
+                <div key={query.id} className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-primary mb-2">{title}</h3>
+                      <div className="flex items-center text-gray-text text-sm space-x-4">
+                        <span className="flex items-center">
+                          <Calendar size={16} className="mr-1" />
+                          {new Date(query.created_at).toLocaleString()}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${query.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                          {query.status === 'pending' ? (
+                            <span className="flex items-center"><Clock size={12} className="mr-1" />Pending</span>
+                          ) : (
+                            <span className="flex items-center"><CheckCircle size={12} className="mr-1" />Responded</span>
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-2">Customer Information</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center">
-                        <span className="font-medium w-24">Name:</span>
-                        <span className="text-gray-text">{query.customer_name}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Mail size={14} className="mr-2 text-secondary" />
-                        <a href={`mailto:${query.customer_email}`} className="text-secondary hover:underline">
-                          {query.customer_email}
-                        </a>
-                      </div>
-                      {query.customer_phone && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Customer Information (Unchanged) */}
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Customer Information</h4>
+                      <div className="space-y-2 text-sm">
                         <div className="flex items-center">
-                          <Phone size={14} className="mr-2 text-secondary" />
-                          <a href={`tel:${query.customer_phone}`} className="text-secondary hover:underline">
-                            {query.customer_phone}
+                          <span className="font-medium w-24">Name:</span>
+                          <span className="text-gray-text">{query.customer_name}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Mail size={14} className="mr-2 text-secondary" />
+                          <a href={`mailto:${query.customer_email}`} className="text-secondary hover:underline">
+                            {query.customer_email}
                           </a>
                         </div>
-                      )}
-                      {query.customer_company && (
-                        <div className="flex items-center">
-                          <Building2 size={14} className="mr-2 text-secondary" />
-                          <span className="text-gray-text">{query.customer_company}</span>
-                        </div>
-                      )}
+                        {query.customer_phone && (
+                          <div className="flex items-center">
+                            <Phone size={14} className="mr-2 text-secondary" />
+                            <a href={`tel:${query.customer_phone}`} className="text-secondary hover:underline">
+                              {query.customer_phone}
+                            </a>
+                          </div>
+                        )}
+                        {query.customer_company && (
+                          <div className="flex items-center">
+                            <Building2 size={14} className="mr-2 text-secondary" />
+                            <span className="text-gray-text">{query.customer_company}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Request Details (Displaying multi-product list) */}
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Requested Items</h4>
+                      <div className="space-y-2 text-sm bg-gray-50 p-3 rounded-lg">
+                        
+                        {itemCount > 0 ? (
+                          query.quote_items.map((item, index) => (
+                            <div key={index} className="flex justify-between border-b border-gray-200 pb-1 last:border-b-0">
+                              <span className="font-medium text-gray-800">
+                                {item.name || 'Product Missing Name'}
+                              </span>
+                              <span className="text-gray-text font-semibold">Qty: {item.quantity || 1}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500">No specific items found (Old single-product format).</p>
+                        )}
+
+                        {query.message && (
+                          <div className="pt-3 border-t border-gray-200">
+                            <span className="font-medium">Message:</span>
+                            <p className="text-gray-text mt-1">{query.message}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-2">Request Details</h4>
-                    <div className="space-y-2 text-sm">
-                      {query.quantity && (
-                        <div>
-                          <span className="font-medium">Quantity:</span>{' '}
-                          <span className="text-gray-text">{query.quantity}</span>
-                        </div>
-                      )}
-                      {query.message && (
-                        <div>
-                          <span className="font-medium">Message:</span>
-                          <p className="text-gray-text mt-1">{query.message}</p>
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex space-x-2 border-t pt-4">
+                    {/* Action buttons (Unchanged) */}
+                    {query.status === 'pending' && (
+                      <button
+                        onClick={() => updateStatus(query.id, 'responded')}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold"
+                      >
+                        Mark as Responded
+                      </button>
+                    )}
+                    {query.status === 'responded' && (
+                      <button
+                        onClick={() => updateStatus(query.id, 'pending')}
+                        className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-sm font-semibold"
+                      >
+                        Mark as Pending
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(query.id)}
+                      className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-semibold"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
+              )
+            })}
 
-                <div className="flex space-x-2 border-t pt-4">
-                  {query.status === 'pending' && (
-                    <button
-                      onClick={() => updateStatus(query.id, 'responded')}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold"
-                    >
-                      Mark as Responded
-                    </button>
-                  )}
-                  {query.status === 'responded' && (
-                    <button
-                      onClick={() => updateStatus(query.id, 'pending')}
-                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-sm font-semibold"
-                    >
-                      Mark as Pending
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(query.id)}
-                    className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-semibold"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {queries.length === 0 && (
+            {queries.length === 0 && !loading && (
               <div className="text-center py-20">
                 <p className="text-gray-text text-lg">No queries found</p>
               </div>
