@@ -31,13 +31,20 @@ export async function submitMultiProductQuote(data: SubmissionData) {
   // Prefer server-side RPC for atomic insertion if available
   try {
     // Attempt to call an RPC that inserts header + items transactionally
+    // Ensure RPC receives field names that match DB columns (snake_case).
+    const rpcItems = quoteItems.map(item => ({
+      product_id: item.productId,
+      name: item.name,
+      quantity: item.quantity
+    }))
+
     const rpcParams = {
       p_customer_name: customer_name,
       p_customer_email: customer_email,
       p_customer_phone: customer_phone,
       p_customer_company: customer_company,
       p_message: message,
-      p_items: JSON.stringify(quoteItems)
+      p_items: JSON.stringify(rpcItems)
     }
 
     const { data: rpcData, error: rpcError } = await supabase.rpc('insert_price_query_with_items', rpcParams as any)
