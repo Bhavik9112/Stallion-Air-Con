@@ -9,7 +9,8 @@ interface Stats {
   totalProducts: number
   totalCategories: number
   totalBrands: number
-  pendingQueries: number
+  pendingPriceQueries: number
+  pendingGeneralQueries: number
 }
 
 export default function AdminDashboardPage() {
@@ -18,7 +19,8 @@ export default function AdminDashboardPage() {
     totalProducts: 0,
     totalCategories: 0,
     totalBrands: 0,
-    pendingQueries: 0
+    pendingPriceQueries: 0,
+    pendingGeneralQueries: 0
   })
 
   useEffect(() => {
@@ -38,7 +40,8 @@ export default function AdminDashboardPage() {
       totalProducts: products.count || 0,
       totalCategories: categories.count || 0,
       totalBrands: brands.count || 0,
-      pendingQueries: (generalQueries.count || 0) + (priceQueries.count || 0)
+      pendingPriceQueries: priceQueries.count || 0,
+      pendingGeneralQueries: generalQueries.count || 0
     })
   }
 
@@ -87,9 +90,17 @@ export default function AdminDashboardPage() {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <MessageSquare className="text-red-600" size={32} />
-                <span className="text-3xl font-bold text-red-600">{stats.pendingQueries}</span>
+                <span className="text-3xl font-bold text-red-600">{stats.pendingPriceQueries}</span>
               </div>
-              <h3 className="text-gray-700 font-semibold">Pending Queries</h3>
+              <h3 className="text-gray-700 font-semibold">Pending Price Queries</h3>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <LayoutDashboard className="text-primary" size={32} />
+                <span className="text-3xl font-bold text-primary">{stats.pendingGeneralQueries}</span>
+              </div>
+              <h3 className="text-gray-700 font-semibold">Pending General Queries</h3>
             </div>
           </div>
 
