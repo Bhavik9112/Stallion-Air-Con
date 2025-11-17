@@ -14,8 +14,20 @@ declare
   item json;
 begin
   -- Insert header and capture id
-  insert into public.price_queries (customer_name, customer_email, customer_phone, customer_company, message, status, created_at)
-  values (p_customer_name, p_customer_email, p_customer_phone, p_customer_company, p_message, 'pending', now())
+  -- If your price_queries table has a non-null `product_id` column (legacy single-product),
+  -- populate it from the first item in the provided JSON array. Adjust cast if your product_id is not UUID.
+  insert into public.price_queries (customer_name, customer_email, customer_phone, customer_company, message, status, created_at, product_id)
+  values (
+    p_customer_name,
+    p_customer_email,
+    p_customer_phone,
+    p_customer_company,
+    p_message,
+    'pending',
+    now(),
+    -- extract product_id from first element of p_items array; if not present this will be NULL
+    nullif((p_items->0->>'product_id')::text, '')::uuid
+  )
   returning id into v_new_id;
 
   -- Insert each item (expecting p_items to be a JSON array of objects with product_id, name, quantity)

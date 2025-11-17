@@ -52,16 +52,23 @@ export async function submitMultiProductQuote(data: SubmissionData) {
   } catch (rpcErr) {
     // Fallback to two-step insert if RPC is not available or failed
     // --- STEP 1: Insert the main quote into 'price_queries' ---
+    // Use first item's productId to populate legacy `product_id` column if required by DB schema
+    const headerPayload: any = {
+      customer_name: customer_name,
+      customer_email: customer_email,
+      customer_phone: customer_phone,
+      customer_company: customer_company,
+      message: message,
+      status: 'pending'
+    }
+
+    if (quoteItems && quoteItems.length > 0 && quoteItems[0].productId) {
+      headerPayload.product_id = quoteItems[0].productId
+    }
+
     const { data: quote, error: quoteError } = await supabase
       .from('price_queries')
-      .insert([{ 
-        customer_name: customer_name, 
-        customer_email: customer_email, 
-        customer_phone: customer_phone,
-        customer_company: customer_company,
-        message: message,
-        status: 'pending'
-      }])
+      .insert([headerPayload])
       .select('id') 
       .single();
 
@@ -73,7 +80,7 @@ export async function submitMultiProductQuote(data: SubmissionData) {
 
     // --- STEP 2: Prepare and insert all items into 'quote_items' ---
     const itemsToInsert = quoteItems.map(item => ({
-      query_id: newQueryId, // CRITICAL: Link to the header quote
+      query_id: newQueryId, // Link to the header quote
       product_id: item.productId,
       quantity: item.quantity,
       name: item.name 
