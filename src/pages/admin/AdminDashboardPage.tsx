@@ -135,6 +135,12 @@ export default function AdminDashboardPage() {
               <p className="text-gray-text">View and respond to customer price requests</p>
             </Link>
 
+            <Link to="/admin/general-queries" className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition">
+              <MessageSquare className="text-yellow-600 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-primary mb-2">General Queries</h2>
+              <p className="text-gray-text">View contact form messages and general inquiries</p>
+            </Link>
+
             <Link to="/" className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition">
               <LayoutDashboard className="text-green-600 mb-4" size={48} />
               <h2 className="text-2xl font-bold text-primary mb-2">View Website</h2>

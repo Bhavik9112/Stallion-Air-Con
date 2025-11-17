@@ -15,6 +15,7 @@ import AdminCategoriesPage from './pages/admin/AdminCategoriesPage'
 import AdminSubcategoriesPage from './pages/admin/AdminSubcategoriesPage'
 import AdminBrandsPage from './pages/admin/AdminBrandsPage'
 import AdminQueriesPage from './pages/admin/AdminQueriesPage'
+import AdminGeneralQueriesPage from './pages/admin/AdminGeneralQueriesPage'
 import './App.css'
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
             <Route path="/admin/subcategories" element={<AdminSubcategoriesPage />} />
             <Route path="/admin/brands" element={<AdminBrandsPage />} />
             <Route path="/admin/queries" element={<AdminQueriesPage />} />
+            <Route path="/admin/general-queries" element={<AdminGeneralQueriesPage />} />
           </Routes>
         </Router>
       </AuthProvider>
