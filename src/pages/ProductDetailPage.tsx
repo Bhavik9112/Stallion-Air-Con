@@ -139,11 +139,16 @@ export default function ProductDetailPage() {
   }
 
   const selectSuggestedProduct = (index: number, productResult: { id: string, name: string }) => {
-    // 1. Update the specific item in the quote cart
-    handleItemChange(index, 'productId', productResult.id)
-    handleItemChange(index, 'name', productResult.name)
+    // Update the specific item with both productId and name in a single state update
+    const newItems = [...quoteItems]
+    newItems[index] = {
+      ...newItems[index],
+      productId: productResult.id,
+      name: productResult.name
+    }
+    setQuoteItems(newItems)
     
-    // 2. Clear search states
+    // Clear search states
     setSearchTerm('')
     setSearchResults([])
     setSearchIndex(null)
