@@ -86,8 +86,9 @@ export default function AdminProductsPage() {
       const bucketName = 'images'
       const folderPath = `products/${fileName}`
 
-      // Upload directly to Supabase Storage bucket
-      const { data, error } = await supabase.storage
+      // Upload directly to Supabase Storage bucket using admin client
+      // NOTE: This uses the service role client and should only be used in trusted/dev environments.
+      const { data, error } = await supabaseAdmin.storage
         .from(bucketName)
         .upload(folderPath, imageFile, {
           cacheControl: '3600',
@@ -97,7 +98,7 @@ export default function AdminProductsPage() {
       if (error) throw error
 
       // Construct the public URL from the uploaded file path
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = supabaseAdmin.storage
         .from(bucketName)
         .getPublicUrl(folderPath)
 
