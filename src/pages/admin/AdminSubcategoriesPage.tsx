@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabaseAdmin'
 
 export default function AdminSubcategoriesPage() {
   const [subcategories, setSubcategories] = useState<any[]>([])
@@ -27,17 +28,11 @@ export default function AdminSubcategoriesPage() {
     setLoading(true)
     
     const [subcategoriesRes, categoriesRes] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from('subcategories')
-        .select(`
-          *,
-          categories!inner(name)
-        `)
-        .order('display_order', { ascending: true }),
-      supabase
-        .from('categories')
         .select('*')
-        .order('name', { ascending: true })
+        .order('display_order', { ascending: true }),
+      supabaseAdmin.from('categories').select('*')
     ])
 
     if (subcategoriesRes.data) setSubcategories(subcategoriesRes.data)
@@ -64,14 +59,14 @@ export default function AdminSubcategoriesPage() {
       }
 
       if (editingSubcategory) {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('subcategories')
           .update(subcategoryData)
           .eq('id', editingSubcategory.id)
         
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('subcategories')
           .insert([subcategoryData])
         
@@ -91,7 +86,7 @@ export default function AdminSubcategoriesPage() {
     if (!confirm('Are you sure you want to delete this subcategory?')) return
 
     try {
-      const { error } = await supabase.from('subcategories').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('subcategories').delete().eq('id', id)
       if (error) throw error
       loadData()
     } catch (error: any) {

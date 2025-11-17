@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Mail, Phone, Building2, Calendar, CheckCircle, Clock } from 'lucide-react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabaseAdmin'
 
 // --- INTERFACES ---
 interface QuoteItemData {
@@ -41,7 +42,7 @@ export default function AdminQueriesPage() {
     setLoading(true)
     
     // STEP 1: Fetch ALL price queries (simple SELECT, guaranteed to work)
-    let headerQuery = supabase
+    let headerQuery = supabaseAdmin
       .from('price_queries')
       .select(`id, customer_name, customer_email, customer_phone, customer_company, message, status, created_at`)
       .order('created_at', { ascending: false });
@@ -69,7 +70,7 @@ export default function AdminQueriesPage() {
     const quoteIds = quotesData.map(q => q.id);
 
     // STEP 2: Fetch ALL related quote items in a single batch request
-    const { data: itemsData, error: itemsError } = await supabase
+    const { data: itemsData, error: itemsError } = await supabaseAdmin
       .from('quote_items')
       .select(`query_id, quantity, name, product_id`) 
       .in('query_id', quoteIds); // Filter by the IDs fetched in Step 1
@@ -96,7 +97,7 @@ export default function AdminQueriesPage() {
   // --- updateStatus and handleDelete functions remain the same ---
   async function updateStatus(id: string, status: string) {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('price_queries')
         .update({ 
           status,
@@ -115,7 +116,7 @@ export default function AdminQueriesPage() {
     if (!confirm('Are you sure you want to delete this query?')) return
 
     try {
-      const { error } = await supabase.from('price_queries').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('price_queries').delete().eq('id', id)
       if (error) throw error
       loadQueries()
     } catch (error: any) {

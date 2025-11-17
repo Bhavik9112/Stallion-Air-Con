@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Mail, Phone, Calendar, CheckCircle, Clock } from 'lucide-react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabaseAdmin'
 
 interface GeneralQuery {
   id: string
@@ -26,7 +27,7 @@ export default function AdminGeneralQueriesPage() {
   async function loadQueries() {
     setLoading(true)
 
-    let q = supabase
+    let q = supabaseAdmin
       .from('queries')
       .select('id, name, email, phone, message, status, created_at')
       .order('created_at', { ascending: false })
@@ -48,7 +49,7 @@ export default function AdminGeneralQueriesPage() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      const { error } = await supabase.from('queries').update({ status }).eq('id', id)
+      const { error } = await supabaseAdmin.from('queries').update({ status }).eq('id', id)
       if (error) throw error
       loadQueries()
     } catch (error: any) {
@@ -59,7 +60,7 @@ export default function AdminGeneralQueriesPage() {
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this query?')) return
     try {
-      const { error } = await supabase.from('queries').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('queries').delete().eq('id', id)
       if (error) throw error
       loadQueries()
     } catch (error: any) {

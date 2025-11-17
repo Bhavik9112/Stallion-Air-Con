@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Edit, Trash2, Upload } from 'lucide-react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabaseAdmin'
 
 interface Product {
   id: string
@@ -56,11 +57,11 @@ export default function AdminProductsPage() {
     
     // 💡 UPDATE: Added subcategoriesRes to the Promise.all
     const [productsRes, categoriesRes, brandsRes, subcategoriesRes] = await Promise.all([
-      supabase.from('products').select('*').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*').order('display_order', { ascending: true }),
-      supabase.from('brands').select('*').order('name', { ascending: true }),
+      supabaseAdmin.from('products').select('*').order('created_at', { ascending: false }),
+      supabaseAdmin.from('categories').select('*').order('display_order', { ascending: true }),
+      supabaseAdmin.from('brands').select('*').order('name', { ascending: true }),
       // 💡 NEW: Fetch all subcategories
-      supabase.from('subcategories').select('id, name, category_id').order('name', { ascending: true }) 
+      supabaseAdmin.from('subcategories').select('id, name, category_id').order('name', { ascending: true }) 
     ])
 
     if (productsRes.data) setProducts(productsRes.data)
@@ -153,14 +154,14 @@ export default function AdminProductsPage() {
       }
 
       if (editingProduct) {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('products')
           .update(productData)
           .eq('id', editingProduct.id)
         
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('products')
           .insert(productData)
         
@@ -180,7 +181,7 @@ export default function AdminProductsPage() {
     if (!confirm('Are you sure you want to delete this product?')) return
 
     try {
-      const { error } = await supabase.from('products').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('products').delete().eq('id', id)
       if (error) throw error
       loadData()
     } catch (error: any) {

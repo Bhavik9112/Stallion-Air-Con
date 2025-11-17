@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabaseAdmin'
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
@@ -27,7 +28,7 @@ export default function AdminCategoriesPage() {
 
   async function loadCategories() {
     setLoading(true)
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('categories')
       .select('*')
       .order('display_order', { ascending: true })
@@ -110,14 +111,14 @@ export default function AdminCategoriesPage() {
       }
 
       if (editingCategory) {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('categories')
           .update(categoryData)
           .eq('id', editingCategory.id)
         
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('categories')
           .insert([categoryData])
         
@@ -137,7 +138,7 @@ export default function AdminCategoriesPage() {
     if (!confirm('Are you sure you want to delete this category? This will also delete all associated subcategories and products.')) return
 
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('categories').delete().eq('id', id)
       if (error) throw error
       loadCategories()
     } catch (error: any) {
