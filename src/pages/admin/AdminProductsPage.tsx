@@ -104,7 +104,16 @@ export default function AdminProductsPage() {
       return publicUrl
     } catch (error: any) {
       console.error('Image upload error:', error)
-      throw new Error(error.message || 'Failed to upload image to storage')
+      const msg = (error && (error.message || error.error || error.msg)) || String(error)
+      if (String(msg).toLowerCase().includes('bucket not found')) {
+        alert(
+          'Error: Storage bucket "images" not found in your Supabase project.\n\n' +
+            'Fix: Go to your Supabase dashboard → Storage → Create a new bucket named "images".\n' +
+            'Make it public if you want `getPublicUrl()` to work, or adjust the code to use signed URLs for private buckets.'
+        )
+        throw new Error('Bucket not found')
+      }
+      throw new Error(msg || 'Failed to upload image to storage')
     } finally {
       setUploading(false)
     }
