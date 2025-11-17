@@ -105,13 +105,21 @@ export default function AdminProductsPage() {
     } catch (error: any) {
       console.error('Image upload error:', error)
       const msg = (error && (error.message || error.error || error.msg)) || String(error)
+      // Fallback: when bucket missing, store image as base64 data URL in DB
       if (String(msg).toLowerCase().includes('bucket not found')) {
         alert(
-          'Error: Storage bucket "images" not found in your Supabase project.\n\n' +
-            'Fix: Go to your Supabase dashboard → Storage → Create a new bucket named "images".\n' +
-            'Make it public if you want `getPublicUrl()` to work, or adjust the code to use signed URLs for private buckets.'
+          'Warning: Storage bucket "images" not found. Falling back to storing image as a base64 data URL in the database.\n\n' +
+            'Recommended: Create a public bucket named "images" in Supabase Storage to store files properly.'
         )
-        throw new Error('Bucket not found')
+
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = (e) => reject(e)
+          reader.readAsDataURL(imageFile)
+        })
+
+        return dataUrl
       }
       throw new Error(msg || 'Failed to upload image to storage')
     } finally {
