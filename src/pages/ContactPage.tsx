@@ -281,8 +281,19 @@ export default function ContactPage() {
                 center={{ lat: 20.3603109, lng: 72.93100989999999 }}
                 zoom={16}
                 markerTitle="Stallion Air Con - HVAC Solutions"
+                address={`C-5/37, Retash Shopping Centre, GIDC Area Internal Rd, Commercial Zone, Char Rasta, GIDC, Vapi, Gujarat 396191, India`}
               />
             </div>
+          </div>
+          <div className="max-w-4xl mx-auto text-center mt-4">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('C-5/37, Retash Shopping Centre, GIDC Area Internal Rd, Commercial Zone, Char Rasta, GIDC, Vapi, Gujarat 396191, India')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline font-semibold"
+            >
+              View on Google Maps
+            </a>
           </div>
           
           <div className="max-w-4xl mx-auto text-center">

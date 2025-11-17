@@ -1,5 +1,5 @@
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const mapContainerStyle = {
   width: '100%',
@@ -19,21 +19,54 @@ interface GoogleMapComponentProps {
   }
   zoom?: number
   markerTitle?: string
+  address?: string
 }
 
 export default function GoogleMapComponent({ 
   center = defaultCenter, 
   zoom = 15,
-  markerTitle = 'Stallion Air Con'
+  markerTitle = 'Stallion Air Con',
+  address
 }: GoogleMapComponentProps) {
   const [showInfoWindow, setShowInfoWindow] = useState(true)
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(center)
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyCO0kKndUNlmQi3B5mxy4dblg_8WYcuKuk'
+
+  useEffect(() => {
+    // If an address is provided, try to geocode it to coordinates using the Maps JS Geocoder.
+    if (!address) {
+      setMapCenter(center)
+      return
+    }
+
+    // Ensure google maps script has loaded
+    const tryGeocode = () => {
+      // @ts-ignore
+      if (typeof window === 'undefined' || !(window as any).google || !(window as any).google.maps || !(window as any).google.maps.Geocoder) {
+        // If google is not available yet, skip (LoadScript will load it and effect may re-run)
+        return
+      }
+
+      // @ts-ignore
+      const geocoder = new window.google.maps.Geocoder()
+      geocoder.geocode({ address }, (results: any, status: string) => {
+        if (status === 'OK' && results && results[0]) {
+          const loc = results[0].geometry.location
+          setMapCenter({ lat: loc.lat(), lng: loc.lng() })
+        } else {
+          console.warn('Google Maps geocode failed:', status)
+        }
+      })
+    }
+
+    tryGeocode()
+  }, [address, center])
 
   return (
     <LoadScript googleMapsApiKey={apiKey}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={center}
+        center={mapCenter}
         zoom={zoom}
         options={{
           zoomControl: true,
@@ -43,13 +76,13 @@ export default function GoogleMapComponent({
         }}
       >
         <Marker
-          position={center}
+          position={mapCenter}
           onClick={() => setShowInfoWindow(!showInfoWindow)}
           title={markerTitle}
         />
         {showInfoWindow && (
           <InfoWindow
-            position={center}
+            position={mapCenter}
             onCloseClick={() => setShowInfoWindow(false)}
           >
             <div className="p-2">
