@@ -79,34 +79,34 @@ export default function AdminProductsPage() {
 
     setUploading(true)
     try {
-      const reader = new FileReader()
-      return new Promise<string>((resolve, reject) => {
-        reader.onloadend = async () => {
-          try {
-            const base64Data = reader.result as string
-            const payload = { imageData: base64Data, fileName: imageFile.name }
-            const { data, error } = await supabase.functions.invoke('upload-product-image', {
-              body: JSON.stringify(payload),
-              headers: { 'Content-Type': 'application/json' }
-            })
+      // Generate a unique file name
+      const timestamp = Date.now()
+      const fileName = `product-${timestamp}-${imageFile.name}`
+      const bucketName = 'images'
+      const folderPath = `products/${fileName}`
 
-            if (error) throw error
+      // Upload directly to Supabase Storage bucket
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(folderPath, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        })
 
-            const publicUrl = data?.publicUrl || data?.data?.publicUrl || (data && data.data && data.data.publicUrl)
-            if (!publicUrl) throw new Error('Upload succeeded but no public URL was returned')
-            resolve(publicUrl)
-          } catch (err) {
-            reject(err)
-          } finally {
-            setUploading(false)
-          }
-        }
-        reader.onerror = reject
-        reader.readAsDataURL(imageFile)
-      })
-    } catch (error) {
+      if (error) throw error
+
+      // Construct the public URL from the uploaded file path
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(folderPath)
+
+      if (!publicUrl) throw new Error('Failed to generate public URL for uploaded image')
+      return publicUrl
+    } catch (error: any) {
+      console.error('Image upload error:', error)
+      throw new Error(error.message || 'Failed to upload image to storage')
+    } finally {
       setUploading(false)
-      throw error
     }
   }
 
