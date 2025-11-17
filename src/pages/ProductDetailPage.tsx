@@ -364,7 +364,7 @@ export default function ProductDetailPage() {
 
                             {/* --- DISPLAY SEARCH RESULTS --- */}
                             {searchIndex === index && searchTerm.length > 1 && searchResults.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 border border-gray-300 bg-white shadow-lg max-h-48 overflow-y-auto rounded-lg">
+                                <div className="absolute z-50 w-full top-full mt-1 border border-gray-300 bg-white shadow-lg max-h-48 overflow-y-auto rounded-lg">
                                     {searchResults.map((result) => (
                                         <div
                                             key={result.id}
@@ -396,8 +396,8 @@ export default function ProductDetailPage() {
                   </div>
 
                   {/* Inline validation hint when user typed a name but didn't select suggestion */}
-                  {item.name && !item.productId && (
-                    <p className="text-sm text-red-600">Please select a product from the suggestions list.</p>
+                  {index > 0 && item.name && !item.productId && (
+                    <p className="text-sm text-red-600 font-semibold">⚠️ Please select a product from the dropdown suggestions.</p>
                   )}
 
                   {/* Remove Button (Allow removal only for added products, not the initial product) */}
