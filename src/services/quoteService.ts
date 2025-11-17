@@ -1,6 +1,6 @@
 // src/services/quoteService.ts
 
-import { supabase } from '../lib/supabase'; // **CHECK THIS PATH**
+import { supabase } from '../lib/supabase'; // Adjust this path if your supabase client is elsewhere
 
 // Define the required data interfaces
 interface QuoteItem {
@@ -50,7 +50,7 @@ export async function submitMultiProductQuote(data: SubmissionData) {
 
   // --- STEP 2: Prepare and insert all items into 'quote_items' ---
   const itemsToInsert = quoteItems.map(item => ({
-    query_id: newQueryId, 
+    query_id: newQueryId, // CRITICAL: Link to the header quote
     product_id: item.productId,
     quantity: item.quantity,
     name: item.name 
