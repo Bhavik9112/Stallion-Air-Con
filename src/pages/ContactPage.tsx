@@ -295,6 +295,21 @@ export default function ContactPage() {
               View on Google Maps
             </a>
           </div>
+
+          <div className="max-w-4xl mx-auto mt-6">
+            <h3 className="text-center text-sm text-gray-600 mb-2">If the embedded map above doesn't show the marker, this embedded view should locate the exact business address:</h3>
+            <div className="w-full rounded-lg overflow-hidden shadow-md">
+              <iframe
+                title="Stallion Air Con - Location"
+                src={`https://www.google.com/maps?q=${encodeURIComponent('C-5/37, Retash Shopping Centre, GIDC Area Internal Rd, Commercial Zone, Char Rasta, GIDC, Vapi, Gujarat 396191, India')}&output=embed`}
+                width="100%"
+                height="450"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
           
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-primary mb-6">Need Product Information?</h2>
