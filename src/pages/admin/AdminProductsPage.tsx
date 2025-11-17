@@ -84,15 +84,17 @@ export default function AdminProductsPage() {
         reader.onloadend = async () => {
           try {
             const base64Data = reader.result as string
+            const payload = { imageData: base64Data, fileName: imageFile.name }
             const { data, error } = await supabase.functions.invoke('upload-product-image', {
-              body: {
-                imageData: base64Data,
-                fileName: imageFile.name
-              }
+              body: JSON.stringify(payload),
+              headers: { 'Content-Type': 'application/json' }
             })
 
             if (error) throw error
-            resolve(data.data.publicUrl)
+
+            const publicUrl = data?.publicUrl || data?.data?.publicUrl || (data && data.data && data.data.publicUrl)
+            if (!publicUrl) throw new Error('Upload succeeded but no public URL was returned')
+            resolve(publicUrl)
           } catch (err) {
             reject(err)
           } finally {
