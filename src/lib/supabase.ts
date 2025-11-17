@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = "https://rallutblkfunglmfodqk.supabase.co"
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhbGx1dGJsa2Z1bmdsbWZvZHFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzOTc4NTYsImV4cCI6MjA3Nzk3Mzg1Nn0.bTJ7K3LEUBNaucDH5lGscXPxefn5rwVXJVxjNV4rW48"
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables. Please check your .env file.')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -62,16 +66,22 @@ export type Database = {
   }
   price_queries: {
     id: string
-    product_id: string
     customer_name: string
     customer_email: string
     customer_phone: string | null
     customer_company: string | null
     message: string | null
-    quantity: number | null
     status: string
     admin_response: string | null
     responded_at: string | null
+    created_at: string
+  }
+  quote_items: {
+    id: string
+    query_id: string
+    product_id: string
+    name: string
+    quantity: number
     created_at: string
   }
 }
