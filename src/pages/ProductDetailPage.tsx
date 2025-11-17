@@ -53,12 +53,15 @@ export default function ProductDetailPage() {
   const [customerData, setCustomerData] = useState(initialCustomerData) 
 
   // --- STATE FOR SEARCH/AUTOCOMPLETE ---
-  const [searchResults, setSearchResults] = useState<Product[]>([]) // Stores suggestions
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string }>>([]) // Stores suggestions
   const [searchTerm, setSearchTerm] = useState('')
   const [searchIndex, setSearchIndex] = useState<number | null>(null) // Tracks which row is currently being searched
 
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
+
+  // Prevent submission when any item lacks a selected product id or invalid quantity
+  const hasInvalidItems = quoteItems.some(item => !item.productId || item.quantity <= 0)
 
   useEffect(() => {
     if (slug) loadProduct()
@@ -392,6 +395,11 @@ export default function ProductDetailPage() {
                     />
                   </div>
 
+                  {/* Inline validation hint when user typed a name but didn't select suggestion */}
+                  {item.name && !item.productId && (
+                    <p className="text-sm text-red-600">Please select a product from the suggestions list.</p>
+                  )}
+
                   {/* Remove Button (Allow removal only for added products, not the initial product) */}
                   {index > 0 && (
                     <button
@@ -485,7 +493,7 @@ export default function ProductDetailPage() {
               <div className="flex space-x-4">
                 <button
                   type="submit"
-                  disabled={submitting || quoteItems.length === 0}
+                  disabled={submitting || quoteItems.length === 0 || hasInvalidItems}
                   className="flex-1 bg-secondary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary transition disabled:opacity-50"
                 >
                   {submitting ? 'Submitting...' : 'Submit Quote Request'}
