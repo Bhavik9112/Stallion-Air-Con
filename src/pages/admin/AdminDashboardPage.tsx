@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
         </nav>
 
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <Package className="text-primary" size={32} />
